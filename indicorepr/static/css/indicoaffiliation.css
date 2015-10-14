@@ -1,0 +1,7 @@
+.rounded-field {
+	margin-left:10px;
+	margin-right:10px; 
+	-moz-border-radius: 29px;
+	-webkit-border-radius: 29px;
+	border-radius: 29px;
+}
