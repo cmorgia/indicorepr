@@ -1,12 +1,13 @@
-from MaKaC.services.implementation.base import ParameterManager
+from MaKaC.conference import ConferenceHolder
+from MaKaC.services.implementation.base import ParameterManager, ServiceBase
 from MaKaC.services.implementation.conference import ConferenceModifBase, ConferenceBase
 from indico.util.fossilize import fossilize
 
 
-class ConferenceUpdateLimits(ConferenceModifBase):
+class ConferenceUpdateLimits(ConferenceBase,ServiceBase):
 
     def _checkParams(self):
-        ConferenceModifBase._checkParams(self)
+        ConferenceBase._checkParams(self)
         pm = ParameterManager(self._params)
         self._limits = pm.extract("limits", pType=list, allowEmpty=False)
 
@@ -16,10 +17,7 @@ class ConferenceUpdateLimits(ConferenceModifBase):
         return True
 
 
-class ConferenceGetLimits(ConferenceBase):
-
-    def _checkParams(self):
-        ConferenceBase._checkParams(self)
+class ConferenceGetLimits(ConferenceBase,ServiceBase):
 
     def _getAnswer(self):
         return fossilize(self._conf.getRegistrarsLimits())

@@ -1,8 +1,8 @@
 var limits = [];
 
-function fetchLimits() {
-    jsonRpc(Indico.Urls.JsonRpcService, 'event.get.limits', {
-        confId: params.confId
+function fetchLimits(_confId) {
+    jsonRpc(Indico.Urls.JsonRpcService, 'affiliation.get.limits', {
+        confId: _confId
     }, function(response, error){
         var killProgress = IndicoUI.Dialogs.Util.progress();
         if (exists(error)) {
@@ -11,7 +11,8 @@ function fetchLimits() {
         }
         else {
             killProgress();
-            limits = response.limits;
+            limits = response;
+            decorateList();
         }
     });
 }
@@ -74,6 +75,7 @@ ecosocList.initialize();
 
 function remoteUpdate(event) {
     var payload = [];
+    var confId = $('input[name="confId"]:first').val();
     $('#inPlaceRegistrars > .UIPerson').each(function(idx,elem){
         var id = $(elem).attr('id');
         var affiliation = $(elem).find('.tt-input').typeahead('val');
@@ -85,8 +87,8 @@ function remoteUpdate(event) {
      var registrarId = parentLi.attr("id");
      var org = parentLi.find('.affiliation').val();
      var maxdelegates = parentLi.find('.maxdelegates').val();*/
-    jsonRpc(Indico.Urls.JsonRpcService, 'event.update.limits', {
-        confId: '${ confId }',
+    jsonRpc(Indico.Urls.JsonRpcService, 'affiliation.update.limits', {
+        confId: confId,
         limits: payload
     }, function(response, error){
         var killProgress = IndicoUI.Dialogs.Util.progress();
@@ -102,9 +104,10 @@ function remoteUpdate(event) {
 };
 
 $(function(){
+    var confId = $('input[name="confId"]:first').val();
+    fetchLimits(confId);
     $('#inPlaceAddManagerButton[value=\"Add registrar\"]').after("<input type=\"button\" id=\"remoteUpdate\" onclick=\"remoteUpdate();\" value=\"Update limits\">");
     $('#inPlaceRegistrars').on('listUpdated', decorateList);
-    decorateList();
     $('.affiliation.rounded-field').typeahead({
         highlight: true,
         //hint: false,
