@@ -1,63 +1,37 @@
-ndRegForm.directive('ndIndicoReplace', function ($compile) {
+ndRegForm.value('reprurl',
+    Indico.Urls.Base + '/event/:confId/reprtypes'
+);
+
+ndRegForm.factory('reprTypeFactory', function($resource, reprurl) {
     return {
-        restrict: 'A',
-        replace: false,
-        terminal: true, //this setting is important, see explanation below
-        priority: 1000, //this setting is important, see explanation below
-        compile: function compile(element, attrs) {
-            element.removeAttr("nd-indico-replace"); //remove the attribute to avoid indefinite loop
-            element.removeAttr("data-nd-indico-replace"); //also remove the same attribute with data- prefix in case users specify data-common-things in the html
-
-            return {
-                pre: function preLink(scope, iElement, iAttrs, controller) {
-                    var types = {
-                        "PersonalDataForm":["nd-general-section","nd-personal-data-section"],
-                        "AccommodationForm":"nd-accommodation-section",
-                        "RepresentationForm":"nd-representation-section",
-                        "FurtherInformationForm":"nd-further-information-section",
-                        "ReasonParticipationForm":"nd-reason-section",
-                        "SessionsForm":"nd-sessions-section",
-                        "SocialEventForm":"nd-social-event-section",
-                        "GeneralSectionForm": "nd-general-section"
-                    };
-
-                    var directives;
-                    if (types.hasOwnProperty(scope.section._type)) {
-                        directives = types[scope.section._type];
-                    } else {
-                        directives = "nd-general-section";
-                    }
-                    if (scope.section.hasOwnProperty('directives') && scope.section.directives!="") {
-                        directives = (directives+" "+scope.section.directives).split(" ");
-                    }
-                    if (typeof directives == 'string' || directives instanceof String) {
-                        iElement.attr(directives, directives);
-                    } else {
-                        for (idx in directives) {
-                            iElement.attr(directives[idx],'');
-                        }
-                    }
-                },
-                post: function postLink(scope, iElement, iAttrs, controller) {
-                    debugger;
-                    $compile(iElement)(scope);
-                    var elems = iElement.children("select");
-                    var elem;
-                    for (elem in elems) {
-                        elems[elem].attr('ciao','');
-                    }
-                }
-            };
-        }
+        ReprType: $resource(reprurl, {confId: '@confId'}, {
+            "query": {method:'GET', isArray: true, cache: false}
+        })
     };
 });
 
-ndRegForm.directive("ndMySection", function($rootScope) {
+ndRegForm.directive("ndMySection", function($rootScope, reprTypeFactory) {
     return {
         require: 'ndSection',
         link: function(scope) {
+            debugger;
             scope.buttons.disable = true;
-            scope.representationTypes = {
+            scope.representationType = {};
+            scope.isReadonly = false;
+
+            reprType = reprTypeFactory.ReprType.get({confId: scope.confId}, function() {
+                scope.representationTypes = reprType.representationTypes;
+                scope.contactTypes = reprType.contactTypes;
+                scope.countryList = reprType.countryList;
+                scope.organizationList = reprType.organizationList;
+                scope.representationType.grmodel = scope.representationTypes[reprType.representationType.governmentRepresentative];
+                scope.representationType.rtmodel = scope.representationType.grmodel[reprType.representationType.repType];
+                scope.representationType.rstmodel = scope.representationType.rtmodel[reprType.representationType.repSubType];
+                scope.representationType.ctmodel = scope.contactTypes[reprType.representationType.contactType];
+                scope.representationType.ctrymodel = reprType.representationType.countryRepresentative;
+                scope.representationType.orgmodel = scope.organizationList[scope.userdata.representationType.organizationRepresentative];
+            });
+            /*scope.representationTypes = {
                 'Yes': {
                         'Governments (ECOSOC Bodies)': {'Member States of the body': [], 'Non-Member States of the Body':[],'Non-UN Member States':[]},
                         'Governments (UNCTAD Bodies)':  {'UNCTAD Member States': [], 'Non-UNCTAD Member States':[], 'Non-UN Member States':[]},
@@ -81,7 +55,7 @@ ndRegForm.directive("ndMySection", function($rootScope) {
             scope.contactTypes = {'Head of Delegation':[], 'Delegate':[], 'Press':[], 'UN Staff member':[], 'Intern':[], 'Consultant':[], 'Other':[]};
 
             scope.countryList = {};
-            scope.organizationList = {};
+            scope.organizationList = {};*/
             scope.representationType = {};
             scope.isReadonly = false;
             scope.$watch('userdata.representationType', function() {
@@ -114,4 +88,40 @@ ndRegForm.directive("ndMySection", function($rootScope) {
             });
         }
     };
+});
+
+ndServices.provider('rurl', function() {
+    var baseUrl = Indico.Urls.Base;
+    var modulePath = '';
+
+    return {
+        setModulePath: function(path) {
+            if (path.substr(-1) == '/') {
+                path = path.substr(0, path.length - 1);
+            }
+
+            modulePath = path;
+        },
+
+        $get: function() {
+            return {
+                tpl: function(path) {
+                    return baseUrl + modulePath + '/tpls/' + path;
+                }
+            };
+        }
+    };
+});
+
+ndRegForm.config(function(rurlProvider) {
+    rurlProvider.setModulePath('/static/assets/plugins/indicorepr');
+});
+
+ndRegForm.directive('ndDynamicDropdownField', function(rurl) {
+    return {
+        require: 'ndRadioField',
+        controller: function ($scope) {
+            $scope.tplInput = rurl.tpl('dynamic-dropdown.tpl.html');
+        }
+    }
 });

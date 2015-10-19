@@ -1,0 +1,24 @@
+<ng-form name="nestedForm"
+    ng-init="input = getId(getValue(fieldName))">
+    <select
+        id="field-{{ section.id }}-{{ field.id }}"
+        name="{{ fieldName }}"
+        ng-required="field.mandatory"
+        ng-disabled="anyBillableItemPayed(userdata)"
+        ng-class="{hasError: validationStarted && nestedForm.$invalid}"
+        add-directive="getFieldDirectives(field)"    >
+
+    </select>
+    <input type="hidden"
+        ng-if="anyBillableItemPayed(userdata)"
+        name="{{ fieldName }}"
+        value="{{ getId(getValue(fieldName)) }}"/>
+    <span>
+        <span ng-if="isBillable(selectedItem)" class="regFormPrice">
+            {{ selectedItem.price }}
+        </span>
+            <span ng-if="isBillable(selectedItem)">
+                <nd-currency currency="currency"></nd-currency>
+            </span>
+    </span>
+</ng-form>
